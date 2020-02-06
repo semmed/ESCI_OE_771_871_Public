@@ -384,10 +384,10 @@ class SP3:
                         raise RuntimeError( 'SP3.read_sp3_a: Not GPS or GLONASS')
                     if not self.epoch_pos_t_data[-1][k,1] == float(sp3_lines[j][2:4]):
                         raise RuntimeError( 'SP3.read_sp3_a: satellite id mismatch')
-                    self.epoch_pos_t_data[-1][k,9] = float(sp3_lines[j][4:18])*1000
-                    self.epoch_pos_t_data[-1][k,10] = float(sp3_lines[j][18:32])*1000
-                    self.epoch_pos_t_data[-1][k,11] = float(sp3_lines[j][32:46])*1000
-                    self.epoch_pos_t_data[-1][k,12] = float(sp3_lines[j][46:60])
+                    self.epoch_pos_t_data[-1][k,10] = float(sp3_lines[j][4:18])*1000
+                    self.epoch_pos_t_data[-1][k,11] = float(sp3_lines[j][18:32])*1000
+                    self.epoch_pos_t_data[-1][k,12] = float(sp3_lines[j][32:46])*1000
+                    self.epoch_pos_t_data[-1][k,13] = float(sp3_lines[j][46:60])
                 else: 
                     raise RuntimeError( 'SP3.read_sp3_a: Not a known sp3_a record')
 
@@ -685,10 +685,10 @@ class SP3:
                         raise RuntimeError( 'SP3.read_sp3_b: Not GPS or GLONASS')
                     if not self.epoch_pos_t_data[-1][k,1] == float(sp3_lines[j][2:4]):
                         raise RuntimeError( 'SP3.read_sp3_b: satellite id mismatch')
-                    self.epoch_pos_t_data[-1][k,9] = float(sp3_lines[j][4:18])*1000
-                    self.epoch_pos_t_data[-1][k,10] = float(sp3_lines[j][18:32])*1000
-                    self.epoch_pos_t_data[-1][k,11] = float(sp3_lines[j][32:46])*1000
-                    self.epoch_pos_t_data[-1][k,12] = float(sp3_lines[j][46:60])
+                    self.epoch_pos_t_data[-1][k,10] = float(sp3_lines[j][4:18])*1000
+                    self.epoch_pos_t_data[-1][k,11] = float(sp3_lines[j][18:32])*1000
+                    self.epoch_pos_t_data[-1][k,12] = float(sp3_lines[j][32:46])*1000
+                    self.epoch_pos_t_data[-1][k,13] = float(sp3_lines[j][46:60])
                 elif  sp3_lines[j][0:2] == 'EP':
                     pass
                 elif  sp3_lines[j][0:2] == 'EV':
@@ -982,11 +982,29 @@ class SP3:
                     self.epoch_pos_t_data[-1][k,5] = float(sp3_lines[j][46:60])
                     
                     if not self.epoch_pos_t_data[-1][k,5] == 999999.999999:
-                        pass
-#                         self.epoch_pos_t_data[-1][k,6] = self.pos_vel_base**float(sp3_lines[j][61:63])/1000
-#                         self.epoch_pos_t_data[-1][k,7] = self.pos_vel_base**float(sp3_lines[j][64:66])/1000
-#                         self.epoch_pos_t_data[-1][k,8] = self.pos_vel_base**float(sp3_lines[j][67:69])/1000
-#                         self.epoch_pos_t_data[-1][k,9] = self.clock_rate_base**float(sp3_lines[j][70:73])/1000
+                        if not sp3_lines[j][61:63] == '  ':
+                            self.epoch_pos_t_data[-1][k,6] = self.pos_vel_base**float(sp3_lines[j][61:63])/1000
+                        else:
+                            self.epoch_pos_t_data[-1][k,6] = np.nan
+                        if not sp3_lines[j][64:66] == '  ':
+                            self.epoch_pos_t_data[-1][k,7] = self.pos_vel_base**float(sp3_lines[j][64:66])/1000
+                        else:
+                            self.epoch_pos_t_data[-1][k,7] = np.nan
+                        if not sp3_lines[j][67:69] == '  ':
+                            self.epoch_pos_t_data[-1][k,8] = self.pos_vel_base**float(sp3_lines[j][67:69])/1000
+                        else:
+                            self.epoch_pos_t_data[-1][k,8] = np.nan
+                        if not sp3_lines[j][70:73] == '   ':
+                            self.epoch_pos_t_data[-1][k,9] = self.clock_rate_base**float(sp3_lines[j][70:73])/1000
+                        else:
+                            self.epoch_pos_t_data[-1][k,9] = np.nan
+                        
+                        
+                    else:
+                        self.epoch_pos_t_data[-1][k,6] = np.nan
+                        self.epoch_pos_t_data[-1][k,7] = np.nan
+                        self.epoch_pos_t_data[-1][k,8] = np.nan
+                        self.epoch_pos_t_data[-1][k,9] = np.nan
                 elif  sp3_lines[j][0:1] == 'V':
                     # GPS = 0 is default
                     if sp3_lines[j][1:2] == ' ' and not self.epoch_pos_t_data[-1][k,0]==0:
