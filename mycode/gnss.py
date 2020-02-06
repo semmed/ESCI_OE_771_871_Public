@@ -43,8 +43,7 @@ class GNSS:
         self.gps_sp3 = list()
         self.gln_sp3 = list()
         self.gps_nav = list()
-        self.gln_nav = list()
-        
+        self.gln_nav = list()        
         
         
     
@@ -151,6 +150,64 @@ class GNSS:
             self.gln_sp3.append( glonass_sp3)
             self.eph_gln_sp3_filenames.append( eph_gln_filename)
                 
+#             # We also will need the .nav file 
+            
+#             dt = t - datetime(year,1,1,0,0,0)
+#             brdc_filename='brdc'
+#             brdc_filename += '%03d0.'%(dt.days + 1) 
+#             brdc_filename += t.strftime('%y')
+#             brdc_filename += 'n'
+            
+#             datapath = os.path.join(self.datapath, brdc_filename)
+            
+#             if not brdc_filename in self.eph_gps_nav_filenames:
+            
+#                 # If the data file does not already exist try to download it
+            
+#                 if not os.path.exists(datapath):
+#                     print( "Downloading ephemeris file: " + brdc_filename)
+                
+#                     eph_url = 'ftp://cddis.gsfc.nasa.gov/gnss/data/daily/' + \
+#                         t.strftime('%Y') + '/brdc/'
+#                     eph_url += brdc_filename + '.Z'
+
+#                     weburl=urllib.request.urlretrieve(eph_url, \
+#                                               os.path.join(self.datapath, brdc_filename + '.Z'))
+
+#                     # Also unzip this data file
+           
+#                     os.system('gunzip -f ' + os.path.join(self.datapath, brdc_filename + '.Z'))
+             
+#                     self.eph_gps_nav_filenames.append( brdc_filename)
+                    
+            
+#             # The Glonass filename will be almost the same
+#             brdc_filename = brdc_filename[:-1]+'g'  
+#             datapath = os.path.join(self.datapath, brdc_filename)
+            
+#             if not brdc_filename in self.eph_gln_nav_filenames:
+            
+#                 # If the data file does not already exist try to download it
+            
+#                 if not os.path.exists(datapath):
+#                     print( "Downloading ephemeris file: " + brdc_filename)
+                
+#                     eph_url = 'ftp://cddis.gsfc.nasa.gov/gnss/data/daily/' + \
+#                         t.strftime('%Y') + '/brdc/'
+#                     eph_url += brdc_filename + '.Z'
+
+#                     weburl=urllib.request.urlretrieve(eph_url, \
+#                                               os.path.join(self.datapath, brdc_filename + '.Z'))
+
+#                     # Also unzip this data file
+           
+#                     os.system('gunzip -f ' + os.path.join(self.datapath, brdc_filename + '.Z'))
+             
+#                     self.eph_gln_nav_filenames.append( brdc_filename)
+                                        
+#         # We now have all the data files that we need. Since the current epoch is the latest epoch 
+#         # the epoch data are contained within the last data files. We now have to create structures to 
+#         # hold the ephemeris data
         
         
 
