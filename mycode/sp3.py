@@ -52,7 +52,7 @@ class SP3:
         
         # Epoch data variables
         
-        self.epoch_time = list()
+        self.epoch_times = list()
         self.epoch_seconds = list()
         self.epoch_pos_t_data = list()
         self.epoch_vel_data = list()
@@ -340,15 +340,13 @@ class SP3:
         epoch_indexes = np.arange(22, \
                                   22+self.nr_epochs*(nr_recordtypes*self.nr_sats+1), \
                                   nr_recordtypes*self.nr_sats+1)
+        
 
-        for i in epoch_indexes:
+        for i in epoch_indexes:     # Cycle through all epochs
             self.epoch_pos_t_data.append(np.zeros([self.nr_sats,34]))  # 34 SP3_c has up to 34 fields 
-                                        
-            self.epoch_time = list()
-            self_epoch_seconds = list()
             
             # Parse epoch header record
-            self.epoch_time.append( datetime(int(sp3_lines[i][3:7]), \
+            self.epoch_times.append( datetime(int(sp3_lines[i][3:7]), \
                                    int(sp3_lines[i][8:10]), \
                                    int(sp3_lines[i][11:13]), \
                                    int(sp3_lines[i][14:16]), \
@@ -390,8 +388,10 @@ class SP3:
                     self.epoch_pos_t_data[-1][k,13] = float(sp3_lines[j][46:60])
                 else: 
                     raise RuntimeError( 'SP3.read_sp3_a: Not a known sp3_a record')
+                
+    
+                k += 1
 
-            k += 1 
 
     def read_sp3_b( self, sp3_lines):
         
@@ -642,12 +642,9 @@ class SP3:
 
         for i in epoch_indexes:
             self.epoch_pos_t_data.append(np.zeros([self.nr_sats,34]))  # 34 SP3_c has up to 34 fields 
-                                        
-            self.epoch_time = list()
-            self_epoch_seconds = list()
             
             # Parse epoch header record
-            self.epoch_time.append( datetime(int(sp3_lines[i][3:7]), \
+            self.epoch_times.append( datetime(int(sp3_lines[i][3:7]), \
                                    int(sp3_lines[i][8:10]), \
                                    int(sp3_lines[i][11:13]), \
                                    int(sp3_lines[i][14:16]), \
@@ -659,6 +656,7 @@ class SP3:
             
             k = 0
             for j in range(i+1,i+nr_recordtypes*self.nr_sats + 1):
+                
                 if sp3_lines[j][0:1] == 'P':
                     # Parse position and clock record
                     # GPS = 0 is default
@@ -697,7 +695,7 @@ class SP3:
                     raise RuntimeError( 'SP3.read_sp3_b: ' + \
                                        sp3_lines[j][0:1] + \
                                        ' Not a known sp3_b record')
-            k += 1          
+                k += 1          
         
     def read_sp3_c( self, sp3_lines):
         
@@ -947,12 +945,9 @@ class SP3:
 
         for i in epoch_indexes:
             self.epoch_pos_t_data.append(np.zeros([self.nr_sats,34]))  # 34 SP3_c has up to 34 fields 
-                                        
-            self.epoch_time = list()
-            self_epoch_seconds = list()
             
             # Parse epoch header record
-            self.epoch_time.append( datetime(int(sp3_lines[i][3:7]), \
+            self.epoch_times.append( datetime(int(sp3_lines[i][3:7]), \
                                    int(sp3_lines[i][8:10]), \
                                    int(sp3_lines[i][11:13]), \
                                    int(sp3_lines[i][14:16]), \
@@ -1047,4 +1042,4 @@ class SP3:
                                        sp3_lines[j][0:1] + \
                                        ' Not a known sp3_c record')
 
-            k += 1
+                k += 1
