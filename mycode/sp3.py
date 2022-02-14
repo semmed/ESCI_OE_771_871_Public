@@ -87,7 +87,6 @@ class SP3:
     def read_sp3_a( self, sp3_lines):
         
         # sp3_a format only - this function can also read sp3_b files that are mislabeled as sp3_a
-        # as long as they are labelled correctly
         
         if (self.file_type.lower() == ' '):
             s_error = 'SP3.__init__: For sp3_a files the system type must be provided \n'

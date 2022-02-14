@@ -1,5 +1,6 @@
 import os
-import urllib.request
+from ftplib import FTP
+import urllib
 from datetime import datetime, timezone, timedelta
 from scipy.interpolate import lagrange
 from numpy.polynomial.polynomial import Polynomial
@@ -12,7 +13,7 @@ from mycode.rinex_nav import RINEX_nav
 # from mycode.ephemeris import Ephemeris
 
 ## Created by Semme J. Dijkstra 12/24/2019
-    #  
+# Updated 2/10/2022 FTP Server interfacing has changed (once again...)
 
 class GNSS:
     """A Class for handling GNSS Data"""
@@ -94,54 +95,57 @@ class GNSS:
         
         if not eph_gps_filename in self.eph_gps_sp3_filenames:
 
-            # Ingest the data from file, but only if it is final data
-            
+            # Ingest the data from file, preferably final data
             datapath = os.path.join(self.datapath, eph_gps_filename)
 
-            # Only download the final data if we do not already have it, try to upload the best quality data
+            # Only download the final data if we do not already have it, 
+            # try to upload the best quality data. If we already have lower quality data
+            # this will try to get higher quality data as the datapath includes the precise
+            # ephemeris data file name
+            
             if not os.path.exists(datapath):
 
-                # Download the data file - for now only precide nav - will add lower quality nav later
-                # Note that lwe will set the Lagarange Polynomial based on the quality of the data file
-                # We really should evauate the statistics, but that carries too far for our purposes here
-        
-                try:
-                    # Form the URL to download the file from
-
-                    eph_url = 'ftp://cddis.gsfc.nasa.gov/gnss/products/' 
-                    eph_url += '%04d'%self.gnss_weeks[-1] + '/' + eph_gps_filename + '.Z';
-                    
-                    print( "Trying to download final ephemeris file: " + eph_gps_filename)
-                    weburl=urllib.request.urlretrieve(eph_url, \
-                                                  os.path.join(self.datapath, eph_gps_filename + '.Z'))
-
-                except:
-                    try:
-                        eph_gps_filename = eph_gps_filename[0:2]+'r'+eph_gps_filename[3:]
-                        eph_url = 'ftp://cddis.gsfc.nasa.gov/gnss/products/' 
-                        eph_url += '%04d'%self.gnss_weeks[-1] + '/' + eph_gps_filename + '.Z';
-                        print( "Trying to download rapid ephemeris file: " + eph_gps_filename)
-                        weburl=urllib.request.urlretrieve(eph_url, \
-                                                  os.path.join(self.datapath, eph_gps_filename + '.Z'))
-
-                    except:
-                        try:
-                            eph_gps_filename = eph_gps_filename[0:2]+'u'+eph_gps_filename[3:]
-                            eph_url = 'ftp://cddis.gsfc.nasa.gov/gnss/products/' 
-                            eph_url += '%04d'%self.gnss_weeks[-1] + '/' + eph_gps_filename + '.Z';
-                            print( "Trying to download ultra-rapid ephemeris file: " + eph_gps_filename)
-                            weburl=urllib.request.urlretrieve(eph_url, \
-                                                  os.path.join(self.datapath, eph_gps_filename + '.Z'))
-
-                        except:
-                            raise RuntimeError('GNSS.__init__: No ephemeris data found!')
-            
+                # Log in to the FTP server of choice - 
+                # Note that it would be much better to have a list of servers to try in class meant for this purpose
+                # However, lets keep this code less complex and just use one server
                 
-        
+                print( 'Attempting to download precise ephemerides file: ' + eph_gps_filename)
+                ftp = FTP('lox.ucsd.edu')  # Select a server (the servers often change...)
+                login = ftp.login('anonymous','student@unh.edu')
+                ftp.cwd('pub/products/' + '%04d'%self.gnss_weeks[-1])
+                
+                # Download the data file - start with precice nav, fall through to rapid and then ultra-rapid
+                if eph_gps_filename + '.Z' in ftp.nlst():
+                    file_handle = open( datapath + '.Z', 'wb')
+
+                    # Form the URL to download the file from
+                    ftp.retrbinary('RETR ' + eph_gps_filename + '.Z', file_handle.write)
+                    file_handle.close()
+                else:    
+                    eph_gps_filename = eph_gps_filename[0:2]+'r'+eph_gps_filename[3:]
+                    datapath = os.path.join(self.datapath, eph_gps_filename)
+                    print( 'Precise ephemerides not found, searching rapid solution: ' + eph_gps_filename)
+                    if eph_gps_filename + '.Z' in ftp.nlst():
+                        file_handle = open( datapath + '.Z', 'wb')
+                        ftp.retrbinary('RETR ' + eph_gps_filename + '.Z', file_handle.write)
+                        file_handle.close()
+                    else:
+                        eph_gps_filename = eph_gps_filename[0:2]+'u'+eph_gps_filename[3:]
+                        datapath = os.path.join(self.datapath, eph_gps_filename)
+                        print( 'Precise ephemerides not found, searching ultra-rapid solution: ' + eph_gps_filename)
+                        if eph_gps_filename + '.Z' in ftp.nlst():
+                            file_handle = open( datapath + '.Z', 'wb')
+                            ftp.retrbinary('RETR ' + eph_gps_filename + '.Z', file_handle.write)
+                            file_handle.close()
+                        else:
+                            print( 'No ephemeris data found!')
+            
                 # Unfortunately Python does not have a Unix uncompress available, which is 
                 # needed to decompress a .Z file on the ePom server. We will use a sidestep to a 
                 # system call assuming that gunzip is available (true for the ePOM server - 
                 # but really should test)
+                # Note that we really should make the calls os specific - here we assume that we have
+                # Linux, which is valid for the ePOM environment
         
                 os.system('gunzip -f ' + os.path.join(self.datapath, eph_gps_filename + '.Z'))
             
@@ -151,70 +155,69 @@ class GNSS:
             self.eph_gps_sp3_filenames.append( eph_gps_filename)
             
             # Now that we are guaranteed to have the data calculate the ephemeris for the epoch
-            
             self.eph_gps_sp3.append(self.get_single_epoch_ephemeris_from_sp3(self.epochs[-1], self.gps_sp3[-1]))
-            
+
         # The Glonass filename will be almost the same
-        eph_gln_filename = eph_gps_filename[:2]+'l'+eph_gps_filename[3:]   
-        
+        eph_gln_filename = eph_gps_filename[:2]+'l'+eph_gps_filename[3:]  
         
         if not eph_gln_filename in self.eph_gln_sp3_filenames:
             datapath = os.path.join(self.datapath, eph_gln_filename)
             
             # Only download the data if we do not already have it
-            
             if not os.path.exists(datapath):
+                
+                print( 'Attempting to download precise ephemerides file: ' + eph_gln_filename)
+                # Only log in to FTP server if we are not already logged in
+                if 'ftp' not in locals():
+                    ftp = FTP('lox.ucsd.edu')  # Select a server (the servers often change...)
+                    ftp.login('anonymous','student@unh.edu')
+                    ftp.cwd('pub/products/' + '%04d'%self.gnss_weeks[-1])
                 
                 if self.gnss_weeks[-1] < 1300:
                     print( "There are no IGS GLONASS SP3 files available for week: "+str(self.gnss_weeks[-1]))
                 else:    
-                    try:
+                    # Download the data file - start with precice nav, fall through to rapid and then ultra-rapid
+                    if eph_gln_filename + '.Z' in ftp.nlst():
+                        file_handle = open( datapath + '.Z', 'wb')
+
                         # Form the URL to download the file from
-
-                        eph_url = 'ftp://cddis.gsfc.nasa.gov/glonass/products/' 
-                        eph_url += '%04d'%self.gnss_weeks[-1] + '/' + eph_gln_filename + '.Z';  
-
-                        print( "Trying to download final ephemeris file: " + eph_gln_filename)
-                        weburl=urllib.request.urlretrieve(eph_url, \
-                                                      os.path.join(self.datapath, eph_gln_filename + '.Z'))
-
-
-                    except:
-                        # There is no equivalent of the rapid file - go straight to ultra-rapid
-                        try:
-                            # Form the ultrarapid name
-                            eph_gln_filename = eph_gln_filename[0:2]+'v'+eph_gln_filename[3:-4]+'_'
-                            eph_gln_filename += str(int((hour//6)*6)) + '.sp3'
-
-                            eph_url = 'ftp://cddis.gsfc.nasa.gov/glonass/products/' 
-                            eph_url += '%04d'%self.gnss_weeks[-1] + '/' + eph_gln_filename + '.Z';
-                            print( "Trying to download ultra-rapid ephemeris file: " + eph_gln_filename)
-                            weburl=urllib.request.urlretrieve(eph_url, \
-                                                      os.path.join(self.datapath, eph_gln_filename + '.Z'))
-
-                        except:
-                            raise RuntimeError('GNSS.__init__: No ephemeris data found!')
-
-                    # Unfortunately Python does not have a Unix uncompress available, which is 
-                    # needed to decompress a .Z file on the ePom server. We will use a sidestep to a 
-                    # system call assuming that gunzip is available (true for the ePOM server - 
-                    # but really should test)
-
+                        ftp.retrbinary('RETR ' + eph_gln_filename + '.Z', file_handle.write)
+                        file_handle.close()
+                    else:    
+                        eph_gln_filename = eph_gln_filename[0:2]+'r'+eph_gln_filename[3:]
+                        datapath = os.path.join(self.datapath, eph_gln_filename)
+                        print( 'Precise ephemerides not found, searching rapid solution: ' + eph_gln_filename)
+                        if eph_gln_filename + '.Z' in ftp.nlst():
+                            file_handle = open( datapath + '.Z', 'wb')
+                            ftp.retrbinary('RETR ' + eph_gln_filename + '.Z', file_handle.write)
+                            file_handle.close()
+                        else:
+                            eph_gln_filename = eph_gln_filename[0:2]+'u'+eph_gln_filename[3:]
+                            datapath = os.path.join(self.datapath, eph_gps_filename)
+                            print( 'Precise ephemerides not found, searching ultra-rapid solution: ' + eph_gps_filename)
+                            if eph_gln_filename + '.Z' in ftp.nlst():
+                                file_handle = open( datapath + '.Z', 'wb')
+                                ftp.retrbinary('RETR ' + eph_gln_filename + '.Z', file_handle.write)
+                                file_handle.close()
+                            else:
+                                print( 'No ephemeris data found!')
+                                
+                # If we did not error out there should be a data file to unzip
                 os.system('gunzip -f ' + os.path.join(self.datapath, eph_gln_filename + '.Z'))
-            
-            if os.path.exists(datapath):
-                # Load the data into an sp3 object and add it to the list
 
-                glonass_sp3 = SP3( os.path.join(self.datapath, eph_gln_filename),'glonass')
-                self.gln_sp3.append( glonass_sp3)
-                self.eph_gln_sp3_filenames.append( eph_gln_filename)
+            # Create an SP3 object and add it to the list
+            glonass_sp3 = SP3( os.path.join(self.datapath, eph_gln_filename),'glonass')
+            self.gln_sp3.append( glonass_sp3)
+            self.eph_gln_sp3_filenames.append( eph_gln_filename)
 
-                # Now that we are guaranteed to have the data calculate the ephemeris for the epoch
-
-                self.eph_gln_sp3.append(self.get_single_epoch_ephemeris_from_sp3(self.epochs[-1], self.gln_sp3[-1]))
+            # Now that we are guaranteed to have the data calculate the ephemeris for the epoch
+            self.eph_gln_sp3.append(self.get_single_epoch_ephemeris_from_sp3(self.epochs[-1], self.gln_sp3[-1]))
                 
        # We also will need the broadcast ephemeris files - we will only read the GPS broadcast data for now
        # (the other systems have different data formats - too much work for this assignment)
+       # We will use the ESA server this time, just to indicate that there is more than one location to find GPS data
+       # Also, we will use the urllib module instead of the FTP module to illustrate that there is more than one way
+       # to retrieve data from the internet. The urllib module is the more general useful one.
     
        # First the GPS nav data files
             
@@ -235,7 +238,7 @@ class GNSS:
             if not os.path.exists(datapath):
                 print( "Downloading ephemeris file: " + brdc_filename)
                 
-                eph_url = 'ftp://cddis.gsfc.nasa.gov/gnss/data/daily/' + \
+                eph_url = 'ftp://gssc.esa.int/gnss/data/daily/' + \
                     t.strftime('%Y') + '/brdc/'
                 eph_url += brdc_filename + '.Z'
 
@@ -255,38 +258,13 @@ class GNSS:
             
             self.eph_gps_nav.append(self.get_single_epoch_ephemeris_from_gps_nav(self.gnss_times[-1], self.gps_nav[-1]))
 
-        # Then the GLONASS data files
-        
-        brdc_filename = brdc_filename[:-1]+'g'    
-        datapath = os.path.join(self.datapath, brdc_filename)
-        
-            
-#         # Only attempt to load if it is not already loaded
-           
-#         if not brdc_filename in self.eph_gln_nav_filenames:
-#             # If the data file does not already exist try to download it
-#             if not os.path.exists(datapath):
-#                 print( "Downloading ephemeris file: " + brdc_filename)
-                
-#                 eph_url = 'ftp://cddis.gsfc.nasa.gov/gnss/data/daily/' + \
-#                     t.strftime('%Y') + '/brdc/'
-#                 eph_url += brdc_filename + '.Z'
+        # We are all done
 
-#                 weburl=urllib.request.urlretrieve(eph_url, \
-#                                           os.path.join(self.datapath, brdc_filename + '.Z'))
+        if 'ftp' in locals():
+            ftp.quit()
 
-#                 # Also unzip this data file
-           
-#                 os.system('gunzip -f ' + os.path.join(self.datapath, brdc_filename + '.Z'))
-            
-#             gln_nav = RINEX_nav( os.path.join(self.datapath, brdc_filename),'glonass')
-#             self.gln_nav.append( gps_nav)
-#             self.eph_gln_nav_filenames.append( brdc_filename) 
-                                        
-#         # We now have all the data files that we need. Since the current epoch is the latest epoch 
-#         # the epoch data are contained within the last data files. We now have to create structures to 
-#         # hold the ephemeris data
-        
+
+
         
 
     # Return the ephemeris of the last epoch in the object  
