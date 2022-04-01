@@ -169,9 +169,9 @@ class GNSS:
                 print( 'Attempting to download precise ephemerides file: ' + eph_gln_filename)
                 # Only log in to FTP server if we are not already logged in
                 if 'ftp' not in locals():
-                    ftp = FTP('lox.ucsd.edu')  # Select a server (the servers often change...)
+                    ftp = FTP('igs.ensg.ign.fr')  # Select a server (the servers often change...)
                     ftp.login('anonymous','student@unh.edu')
-                    ftp.cwd('pub/products/' + '%04d'%self.gnss_weeks[-1])
+                    ftp.cwd('pub/igs/products/' + '%04d'%self.gnss_weeks[-1])
                 
                 if self.gnss_weeks[-1] < 1300:
                     print( "There are no IGS GLONASS SP3 files available for week: "+str(self.gnss_weeks[-1]))
@@ -212,6 +212,7 @@ class GNSS:
 
             # Now that we are guaranteed to have the data calculate the ephemeris for the epoch
             self.eph_gln_sp3.append(self.get_single_epoch_ephemeris_from_sp3(self.epochs[-1], self.gln_sp3[-1]))
+
                 
        # We also will need the broadcast ephemeris files - we will only read the GPS broadcast data for now
        # (the other systems have different data formats - too much work for this assignment)
@@ -220,7 +221,6 @@ class GNSS:
        # to retrieve data from the internet. The urllib module is the more general useful one.
     
        # First the GPS nav data files
-            
         dt = t - datetime(year,1,1,0,0,0)
         brdc_filename='brdc'
         brdc_filename += '%03d0.'%(dt.days + 1) 
@@ -262,10 +262,7 @@ class GNSS:
 
         if 'ftp' in locals():
             ftp.quit()
-
-
-
-        
+     
 
     # Return the ephemeris of the last epoch in the object  
     # This method is for the VGNSS assignment only as it deals poorly with epochs close to the borders of the span
@@ -274,7 +271,7 @@ class GNSS:
     
     def get_single_epoch_ephemeris_from_sp3(self, epoch, gps_sp3):
        
-        # Chose an order of 7 for the Lagrange Polynomials, this should provide cm level accuracy
+        # Chose an order of 5 for the Lagrange Polynomials, this should provide cm level accuracy
         poly_fit_order = 5
 
         # Determine the time differences between the sp3 starting epoch and the other sp3 epochs
