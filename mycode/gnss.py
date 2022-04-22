@@ -212,7 +212,64 @@ class GNSS:
 
             # Now that we are guaranteed to have the data calculate the ephemeris for the epoch
             self.eph_gln_sp3.append(self.get_single_epoch_ephemeris_from_sp3(self.epochs[-1], self.gln_sp3[-1]))
+        # The Glonass filename will be almost the same
+#         eph_gln_filename = eph_gps_filename[:2]+'l'+eph_gps_filename[3:]
+        
 
+#         if not eph_gln_filename in self.eph_gln_sp3_filenames:
+#             datapath = os.path.join(self.datapath, eph_gln_filename)
+
+#             # Only download the data if we do not already have it
+          
+#             if not os.path.exists(datapath):
+
+#                 if self.gnss_weeks[-1] < 1300:
+#                     print( "There are no IGS GLONASS SP3 files available for week: "+str(self.gnss_weeks[-1]))
+#                 else:
+#                     try:
+#                         # Form the URL to download the file from
+#                         eph_url = 'https://cddis.gsfc.nasa.gov/archive/glonass/products/'
+#                         eph_url += '%04d'%self.gnss_weeks[-1] + '/' + eph_gln_filename + '.Z';
+#                         print(eph_url)
+
+#                         print( "Trying to download final ephemeris file: " + eph_gln_filename)
+#                         weburl=urllib.request.urlretrieve(eph_url, \
+#                                                       os.path.join(self.datapath, eph_gln_filename + '.Z'))
+
+
+#                     except:
+#                         # There is no equivalent of the rapid file - go straight to ultra-rapid
+#                         try:
+#                             # Form the ultrarapid name
+#                             eph_gln_filename = eph_gln_filename[0:2]+'v'+eph_gln_filename[3:-4]+'_'
+#                             eph_gln_filename += str(int((hour//6)*6)) + '.sp3'
+
+#                             eph_url = 'ftp://cddis.gsfc.nasa.gov/glonass/products/'
+#                             eph_url += '%04d'%self.gnss_weeks[-1] + '/' + eph_gln_filename + '.Z';
+#                             print( "Trying to download ultra-rapid ephemeris file: " + eph_gln_filename)
+#                             weburl=urllib.request.urlretrieve(eph_url, \
+#                                                       os.path.join(self.datapath, eph_gln_filename + '.Z'))
+
+#                         except:
+#                             raise RuntimeError('GNSS.__init__: No ephemeris data found!')
+
+#                     # Unfortunately Python does not have a Unix uncompress available, which is
+#                     # needed to decompress a .Z file on the ePom server. We will use a sidestep to a
+#                     # system call assuming that gunzip is available (true for the ePOM server -
+#                     # but really should test)
+
+#                 print('Hi ' + os.path.join(datapath + '.Z'))
+#                 os.system('gunzip -S ' + os.path.join(datapath + '.Z'))
+#                 os.system('gunzip -S ' + os.path.join(self.datapath, eph_gln_filename + '.Z'))
+            
+#             if os.path.exists(datapath):
+#                 # Load the data into an sp3 object and add it to the list
+#                 glonass_sp3 = SP3( os.path.join(self.datapath, eph_gln_filename),'glonass')
+#                 self.gln_sp3.append( glonass_sp3)
+#                 self.eph_gln_sp3_filenames.append( eph_gln_filename)
+
+#                 # Now that we are guaranteed to have the data calculate the ephemeris for the epoch
+#                 self.eph_gln_sp3.append(self.get_single_epoch_ephemeris_from_sp3(self.epochs[-1], self.gln_sp3[-1]))
                 
        # We also will need the broadcast ephemeris files - we will only read the GPS broadcast data for now
        # (the other systems have different data formats - too much work for this assignment)
