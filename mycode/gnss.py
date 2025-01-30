@@ -146,9 +146,7 @@ class GNSS:
                 
        # We also will need the broadcast ephemeris files - we will only read the GPS broadcast data for now
        # (the other systems have different data formats - too much work for this assignment)
-       # We will use the ESA server this time, just to indicate that there is more than one location to find GPS data
-       # Also, we will use the urllib module instead of the FTP module to illustrate that there is more than one way
-       # to retrieve data from the internet. The urllib module is the more general useful one.
+      
     
        # First the GPS nav data files
             
@@ -168,27 +166,24 @@ class GNSS:
             
             if not os.path.exists(datapath):
                 print( "Downloading ephemeris file: " + brdc_filename)
-                
-#                 eph_url = 'ftp://gssc.esa.int/gnss/data/daily/' + \
-#                     t.strftime('%Y') + '/brdc/'
-#                 eph_url += brdc_filename + '.Z'
 
                 ftps = FTP_TLS(host = 'gdc.cddis.eosdis.nasa.gov')
                 ftps.login(user='anonymous', passwd=email)
                 ftps.prot_p()
+                print('pub/gps/data/daily/' + t.strftime('%Y') + '/brdc/')
                 ftps.cwd('pub/gps/data/daily/' + t.strftime('%Y') + '/brdc/')
-                ftps.retrbinary("RETR " + brdc_filename+'.gz', open(os.path.join(datapath + '.gz'), 'wb').write)
-                
-#                 eph_url = 'ftp://gdc.cddis.eosdis.nasa.gov/gnss/data/daily/' + \
-#                     t.strftime('%Y') + '/brdc/'
-#                 eph_url += brdc_filename + '.Z'
+                try:
+                    ftps.retrbinary("RETR " + brdc_filename+'.gz', open(os.path.join(datapath + '.gz'), 'wb').write)
+                    os.system('gunzip -f ' + os.path.join(self.datapath, brdc_filename + '.gz'))
+                except:
+                    ftps.retrbinary("RETR " + brdc_filename+'.Z', open(os.path.join(datapath + '.Z'), 'wb').write)
+                    os.system('gunzip -f ' + os.path.join(self.datapath, brdc_filename + '.Z'))
+                    
 
-#                 weburl=urllib.request.urlretrieve(eph_url, \
-#                                           os.path.join(self.datapath, brdc_filename + '.Z'))
 
                 # Also unzip this data file
            
-                os.system('gunzip -f ' + os.path.join(self.datapath, brdc_filename + '.gz'))
+                
                     
             
             gps_nav = RINEX_nav( os.path.join(self.datapath, brdc_filename),'gps')
